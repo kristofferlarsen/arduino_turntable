@@ -31,8 +31,7 @@ void messageCb(const std_msgs::Float32& control_msg){
   
   //this constant needs to be changed
   
-  target_position = 1000.0*control_msg.data;
-  current_angle.data = target_position;
+  target_position = control_msg.data;
 }
 ros::Subscriber<std_msgs::Float32> sub("set_turntable_angle",messageCb);
 
@@ -48,8 +47,8 @@ void setup()
   pinMode(MS2, OUTPUT);
   pinMode(EN, OUTPUT);
   
-  //disable motors by default
-  digitalWrite(EN,HIGH);
+  //enable motors by default
+  digitalWrite(EN,LOW);
   //setup for microstepping (L,L is full step)
   digitalWrite(MS1,LOW);
   digitalWrite(MS2,LOW);
@@ -60,22 +59,23 @@ void loop()
   
   if(current_position > target_position)
   {
-    motor_enable(true);
+    //motor_enable(true);
     sted_Backwards();
   }
   if(current_position < target_position)
   {
-    motor_enable(true);
+    //motor_enable(true);
     step_Forwards();
   }
   else
   {
-    motor_enable(false);
+    //motor_enable(false);
   }
   
   i = i+1;
-  if(i>200)
+  if(i>20)
   {
+    current_angle.data = current_position;
     chatter.publish(&current_angle);
     i = 0;
   }
@@ -89,6 +89,7 @@ void step_Forwards(){
   delay(1);
   digitalWrite(stp,LOW);
   delay(1);
+  current_position = current_position + 1.0;
 }
 
 void sted_Backwards(){
@@ -98,6 +99,7 @@ void sted_Backwards(){
   delay(1);
   digitalWrite(stp,LOW);
   delay(1);
+  current_position = current_position - 1.0;
 }
 
 void motor_enable(bool state)
