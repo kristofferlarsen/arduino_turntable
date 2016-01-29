@@ -13,29 +13,27 @@
 #define MS2 4
 #define EN 6
 
-
 ros::NodeHandle  nh;
 using rosserial_arduino::Test;
 
 int i = 0;
 long current_position = 0;
 long target_position = 0;
-
+int vel;
 
 std_msgs::Int32 current_angle;
 ros::Publisher chatter("current_angle", &current_angle);
-
 
 /*
  * Callback method for topic "set_turntable_angle"
  */
 void messageCb(const std_msgs::Int32& control_msg){
-  target_position = control_msg.data;
+  motor_enable(true);
+  vel = 300;
+  target_position = control_msg.data; 
 }
 
-
 ros::Subscriber<std_msgs::Int32> sub("set_turntable_angle",messageCb);
-
 
 void setup()
 {
@@ -62,25 +60,39 @@ void loop()
 {
   if(current_position > target_position)
   {
-    motor_enable(true);
+    if(vel > 40 && current_position - target_position > 260)
+    {
+      vel = vel-1;
+    }
+    if(current_position - target_position < 260 && vel < 300)
+    {
+      vel = vel + 1;
+    }
     sted_Backwards();
   }
   if(current_position < target_position)
   {
-    motor_enable(true);
+    if(vel > 40 && target_position - current_position > 260)
+    {
+      vel = vel-1;
+    }
+    if(target_position - current_position < 260 && vel < 300)
+    {
+      vel = vel + 1;
+    }
     step_Forwards();
-  }
-  else
-  {
-    motor_enable(false);
   }
   
   i = i+1;
-  if(i>20)
+  if(i>100)
   {
     current_angle.data = current_position;
     chatter.publish(&current_angle);
     i = 0;
+    if(current_position == target_position)
+    {
+      motor_enable(false);
+    }
   }
   nh.spinOnce();
 }
@@ -92,9 +104,9 @@ void step_Forwards(){
   //move one step forward
   digitalWrite(dir,LOW);
   digitalWrite(stp,HIGH);
-  delay(1);
+  delayMicroseconds(vel);
   digitalWrite(stp,LOW);
-  delay(1);
+  delayMicroseconds(vel);
   current_position = current_position + 1.0;
 }
 
@@ -105,9 +117,9 @@ void sted_Backwards(){
   //move one step backwards
   digitalWrite(dir,HIGH);
   digitalWrite(stp,HIGH);
-  delay(1);
+  delayMicroseconds(vel);
   digitalWrite(stp,LOW);
-  delay(1);
+  delayMicroseconds(vel);
   current_position = current_position - 1.0;
 }
 
