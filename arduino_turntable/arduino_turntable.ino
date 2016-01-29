@@ -1,10 +1,11 @@
 /*
  * Arduino + ROS stepper driver node
- * Used to control a turntable (0-360 deg)
+ * Used to control a turntable (0-360 deg) 
+ * Input is position in step (0-12800)
  */
 
 #include <ros.h>
-#include <std_msgs/Float32.h>
+#include <std_msgs/Int32.h>
 #include <rosserial_arduino/Test.h>
 #define stp 3
 #define dir 2
@@ -21,19 +22,19 @@ long current_position = 0;
 long target_position = 0;
 
 
-std_msgs::Float32 current_angle;
+std_msgs::Int32 current_angle;
 ros::Publisher chatter("current_angle", &current_angle);
 
 
 /*
  * Callback method for topic "set_turntable_angle"
  */
-void messageCb(const std_msgs::Float32& control_msg){
-  target_position = 4.4*control_msg.data;
+void messageCb(const std_msgs::Int32& control_msg){
+  target_position = control_msg.data;
 }
 
 
-ros::Subscriber<std_msgs::Float32> sub("set_turntable_angle",messageCb);
+ros::Subscriber<std_msgs::Int32> sub("set_turntable_angle",messageCb);
 
 
 void setup()
@@ -50,8 +51,8 @@ void setup()
   //disable motors by default
   digitalWrite(EN,HIGH);
   //setup for microstepping (L,L is full step)
-  digitalWrite(MS1,LOW);
-  digitalWrite(MS2,LOW);
+  digitalWrite(MS1,HIGH);
+  digitalWrite(MS2,HIGH);
 }
 
 /* 
@@ -77,7 +78,7 @@ void loop()
   i = i+1;
   if(i>20)
   {
-    current_angle.data = current_position*0.225;
+    current_angle.data = current_position;
     chatter.publish(&current_angle);
     i = 0;
   }
